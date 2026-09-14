@@ -12,9 +12,10 @@ import { Footer } from './Footer';
 
 interface PublicHomeProps {
   data: PortfolioData;
+  onNavigateAdmin?: () => void;
 }
 
-export function PublicHome({ data }: PublicHomeProps) {
+export function PublicHome({ data, onNavigateAdmin }: PublicHomeProps) {
   // PRD Bagian 5: Format title: "{nama}" | Personal Portfolio Website
   useEffect(() => {
     const name = data.profile?.name ?? 'Portofolio';
@@ -23,11 +24,6 @@ export function PublicHome({ data }: PublicHomeProps) {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-blue-100 selection:text-blue-900">
-      {/* 
-        PRD Specification:
-        Navbar Publik dengan link anchor ke masing-masing section.
-        TIDAK ADA tautan ke /admin/* sama sekali di navbar maupun footer.
-      */}
       <Navbar name={data.profile?.name} />
 
       <main>
@@ -54,7 +50,7 @@ export function PublicHome({ data }: PublicHomeProps) {
       </main>
 
       {/* Footer Publik */}
-      <Footer name={data.profile?.name} />
+      <Footer name={data.profile?.name} onNavigateAdmin={onNavigateAdmin} />
     </div>
   );
 }

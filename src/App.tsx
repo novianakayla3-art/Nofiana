@@ -13,25 +13,64 @@ import { AdminCourses } from './components/admin/AdminCourses';
 import { AdminLanguages } from './components/admin/AdminLanguages';
 import { AdminContacts } from './components/admin/AdminContacts';
 
+// Normalize and parse route string
+function normalizeRoute(raw: string): string {
+  if (!raw) return '/';
+  let cleaned = raw.trim();
+
+  // Strip query string if embedded in route
+  if (cleaned.includes('?')) {
+    cleaned = cleaned.split('?')[0];
+  }
+
+  // Remove leading '#' if present
+  if (cleaned.startsWith('#')) {
+    cleaned = cleaned.slice(1);
+  }
+
+  // Ensure starts with '/'
+  if (!cleaned.startsWith('/')) {
+    cleaned = '/' + cleaned;
+  }
+
+  // Remove trailing slash unless it's just '/'
+  if (cleaned.length > 1 && cleaned.endsWith('/')) {
+    cleaned = cleaned.slice(0, -1);
+  }
+
+  // Support route aliases
+  if (cleaned === '/admin' || cleaned === '/login' || cleaned === '/admin/auth') {
+    return '/admin/login';
+  }
+
+  return cleaned;
+}
+
 // Parse path from pathname, hash or query
 function getCurrentRoute(): string {
   if (typeof window === 'undefined') return '/';
-  
+
+  // Support query fallback e.g. ?page=/admin/login or ?route=login or ?login or ?admin
+  const urlParams = new URLSearchParams(window.location.search);
+  const pageParam = urlParams.get('page') || urlParams.get('route') || urlParams.get('path');
+  if (pageParam) {
+    return normalizeRoute(pageParam);
+  }
+  if (urlParams.has('login') || urlParams.has('admin')) {
+    return '/admin/login';
+  }
+
+  // Support hash fallback e.g. #/admin/login or #admin/login or #login
+  if (window.location.hash) {
+    const hashRoute = normalizeRoute(window.location.hash);
+    if (hashRoute !== '/') {
+      return hashRoute;
+    }
+  }
+
   const pathname = window.location.pathname;
   if (pathname && pathname !== '/') {
-    return pathname;
-  }
-
-  // Support hash fallback e.g. #/admin/login
-  if (window.location.hash.startsWith('#/')) {
-    return window.location.hash.slice(1);
-  }
-
-  // Support query fallback e.g. ?page=/admin/login
-  const urlParams = new URLSearchParams(window.location.search);
-  const pageParam = urlParams.get('page') || urlParams.get('route');
-  if (pageParam) {
-    return pageParam;
+    return normalizeRoute(pathname);
   }
 
   return '/';
@@ -113,7 +152,11 @@ export default function App() {
   // ==========================================
   // ROUTE 1: /admin/login
   // ==========================================
-  if (currentRoute === '/admin/login') {
+  if (
+    currentRoute === '/admin/login' ||
+    currentRoute === '/login' ||
+    currentRoute === '/admin'
+  ) {
     const session = portfolioService.getAdminSession();
     if (session) {
       // Already logged in -> redirect to dashboard
@@ -244,5 +287,10 @@ export default function App() {
   // ==========================================
   // ROUTE 3: / (Homepage Publik)
   // ==========================================
-  return <PublicHome data={portfolioData} />;
+  return (
+    <PublicHome
+      data={portfolioData}
+      onNavigateAdmin={() => navigate('/admin/login')}
+    />
+  );
 }
